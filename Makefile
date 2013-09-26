@@ -76,8 +76,7 @@ CXX      = g++
 INCPATH = -I $(INCLUDE_DIR) 
 LIBS = -lstdc++
 ifneq (, $(findstring ice, $(LINKERENV)))
-        INCPATH += -I$(ICE_HOME)/include
-	LIBS += -L$(ICE_HOME)/lib
+        INCPATH += -I$(ICEDIR)/include
 endif
 ifneq (, $(findstring ctarta, $(LINKERENV)))
         INCPATH += -I$(CTARTA)/include
@@ -94,6 +93,7 @@ CPPFLAGS =
 ifneq (, $(findstring linux, $(SYSTEM)))
  	#Do linux things
 	ifneq (, $(findstring ice, $(LINKERENV)))
+		LIBS += -L$(ICEDIR)/lib64
 		LIBS += -lIce -lIceUtil -lFreeze
 	endif
 endif
@@ -105,6 +105,7 @@ endif
 ifneq (, $(findstring apple, $(SYSTEM)))
  	# Do apple things
 	ifneq (, $(findstring ice, $(LINKERENV)))
+		LIBS += -L$(ICEDIR)/lib
                 LIBS += -lZerocIce -lZerocIceUtil -lFreeze
         endif
 endif 
