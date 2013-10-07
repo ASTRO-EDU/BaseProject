@@ -21,8 +21,8 @@ SHELL = /bin/sh
 ####### 1) Project names and system
 
 SYSTEM= $(shell gcc -dumpmachine)
-#ice, ctarta, mpi
-LINKERENV= <ice, ctarta, mpi>
+#ice, ctarta, mpi, cfitsio
+LINKERENV= <ice, ctarta, mpi, cfitsio>
 PROJECT= <project_name>
 EXE_NAME = <exe_name>
 LIB_NAME = <lib_name>
@@ -77,6 +77,10 @@ INCPATH = -I $(INCLUDE_DIR)
 LIBS = -lstdc++
 ifneq (, $(findstring ice, $(LINKERENV)))
         INCPATH += -I$(ICEDIR)/include
+endif
+ifneq (, $(findstring cfitsio, $(LINKERENV)))
+        INCPATH += -I$(CFITSIO)/include
+	LIBS += -L$(CFITSIO)/lib -lcfitsio
 endif
 ifneq (, $(findstring ctarta, $(LINKERENV)))
         INCPATH += -I$(CTARTA)/include
