@@ -1,13 +1,13 @@
 #############################################################################
-# Project:  <project_name>
-# Template: exe lib version 2013-09-25
+# Template: exe lib version 2013-10-08
 # Use make variable_name=' options ' to override the variables or make -e to
 # override the file variables with the environment variables
-# 		make CFLAGS='-g' or make prefix='/usr'
+# 		make CFLAGS='-g'
+#		make prefix='/usr'
+#		make CC=gcc-4.8
+# External environment variable: CFISIO, ROOTSYS, CTARTA, ICEDIR
 # Instructions:
 # - modify the section 1)
-# - if you want, modify the section 2) and 3), but it is not necessary
-# - modify the variables of the section 4): CFLAGS INCPATH ALL_CFLAGS CPPFLAGS LIBS
 # - in section 10), modify the following action:
 #		* all: and or remove exe and lib prerequisite
 #		* lib: and or remove staticlib and dynamiclib prerequisite
@@ -16,15 +16,15 @@
 #		* uninstall: add or remove the files and directories that should be uninstalled
 #############################################################################
 
+PROJECT= <project_name>
 SHELL = /bin/sh
 
 ####### 1) Project names and system
 
 SYSTEM= $(shell gcc -dumpmachine)
 #ice, ctarta, mpi, cfitsio
-LINKERENV= <ice, ctarta, mpi, cfitsio>
-PROJECT= <project_name>
-EXE_NAME = <exe_name>
+LINKERENV= <ice, cfitsio, ctarta, cfitsio>
+EXE_NAME = <exe_name> 
 LIB_NAME = <lib_name>
 VER_FILE_NAME = version.h
 #the name of the directory where the conf file are copied (into $(datadir))
@@ -70,8 +70,6 @@ else
 CC       = gcc
 endif
 
-CXX      = g++
-
 #Set INCPATH to add the inclusion paths
 INCPATH = -I $(INCLUDE_DIR) 
 LIBS = -lstdc++
@@ -113,7 +111,7 @@ ifneq (, $(findstring apple, $(SYSTEM)))
                 LIBS += -lZerocIce -lZerocIceUtil -lFreeze
         endif
 endif 
-LINK     = g++
+LINK     = $CC
 #for link
 LFLAGS = -shared -Wl,-soname,$(TARGET1) -Wl,-rpath,$(DESTDIR)
 AR       = ar cqs
@@ -185,7 +183,7 @@ lib: staticlib
 	
 exe: makeobjdir $(OBJECTS)
 		test -d $(EXE_DESTDIR) || mkdir -p $(EXE_DESTDIR)
-		$(CC) $(CPPFLAGS) $(ALL_CFLAGS) $(LIBS) -o $(EXE_DESTDIR)/$(EXE_NAME) $(OBJECTS_DIR)/*.o
+		$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -o $(EXE_DESTDIR)/$(EXE_NAME) $(OBJECTS_DIR)/*.o $(LIBS)
 	
 staticlib: makelibdir makeobjdir $(OBJECTS)	
 		test -d $(LIB_DESTDIR) || mkdir -p $(LIB_DESTDIR)	
