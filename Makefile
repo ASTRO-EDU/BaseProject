@@ -23,7 +23,7 @@ SHELL = /bin/sh
 
 SYSTEM= $(shell gcc -dumpmachine)
 #ice, ctarta, mpi, cfitsio
-LINKERENV= <ice, ctarta, cfitsioi, mpi, pil, wcs, root>
+LINKERENV= <ice, ctarta, cfitsio, mpi, pil, wcs, root>
 EXE_NAME = <exe_name> 
 LIB_NAME = <lib_name>
 VER_FILE_NAME = version.h
