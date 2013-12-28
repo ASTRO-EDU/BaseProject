@@ -101,12 +101,12 @@ ifneq (, $(findstring root, $(LINKERENV)))
 	ALL_CFLAGS += $(ROOTCONF)
 endif
 ifneq (, $(findstring pil, $(LINKERENV)))
-        INCPATH += -I$(includedir)
-	LIBS += -L$(libdir) -lagilepil
+        INCPATH += -I$(AGILE)/include
+	LIBS += -L$(AGILE)/lib -lagilepil
 endif
 ifneq (, $(findstring wcs, $(LINKERENV)))
-        INCPATH += -I$(includedir)
-	LIBS += -L$(libdir) -lagilewcs 
+        INCPATH += -I$(AGILE)/include
+	LIBS += -L$(AGILE)/lib -lagilewcs 
 endif 
 
 #Set addition parameters that depends by operating system
