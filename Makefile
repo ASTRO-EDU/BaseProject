@@ -23,7 +23,7 @@ SHELL = /bin/sh
 
 SYSTEM= $(shell gcc -dumpmachine)
 #ice, ctarta, mpi, cfitsio
-LINKERENV= <ice, cfitsio, ctarta, cfitsio>
+LINKERENV= <ice, ctarta, cfitsioi, mpi, pil, wcs, root>
 EXE_NAME = <exe_name> 
 LIB_NAME = <lib_name>
 VER_FILE_NAME = version.h
@@ -73,6 +73,13 @@ endif
 #Set INCPATH to add the inclusion paths
 INCPATH = -I $(INCLUDE_DIR) 
 LIBS = -lstdc++
+#Insert the optional parameter to the compiler. The CFLAGS could be changed externally by the user
+CFLAGS   = -g
+#Insert the implicit parameter to the compiler:
+ALL_CFLAGS = -m64 -fexceptions -Wall $(CFLAGS) $(INCPATH)
+#Use CPPFLAGS for the preprocessor
+CPPFLAGS =
+
 ifneq (, $(findstring ice, $(LINKERENV)))
         INCPATH += -I$(ICEDIR)/include
 endif
@@ -84,13 +91,25 @@ ifneq (, $(findstring ctarta, $(LINKERENV)))
         INCPATH += -I$(CTARTA)/include
 	LIBS += -L$(CTARTA)/lib -lpacket -lRTAtelem
 endif
-#Insert the optional parameter to the compiler. The CFLAGS could be changed externally by the user
-CFLAGS   = -g 
-#Insert the implicit parameter to the compiler:
-ALL_CFLAGS = -m64 -fexceptions -Wall $(CFLAGS) $(INCPATH)
-#Use CPPFLAGS for the preprocessor
-CPPFLAGS = 
-#Set LIBS for addition library
+ifneq (, $(findstring root, $(LINKERENV)))
+        ROOTCFLAGS   := $(shell root-config --cflags)
+	ROOTLIBS     := $(shell root-config --libs)
+	ROOTGLIBS    := $(shell root-config --glibs)
+	ROOTCONF=-O -pipe -Wall -W -fPIC -D_REENTRANT
+	INCPATH += -I$(ROOTSYS)/include/root
+	LIBS += $(ROOTGLIBS) -lMinuit
+	ALL_CFLAGS += $(ROOTCONF)
+endif
+ifneq (, $(findstring pil, $(LINKERENV)))
+        INCPATH += -I$(includedir)
+	LIBS += -L$(libdir) -lagilepil
+endif
+ifneq (, $(findstring wcs, $(LINKERENV)))
+        INCPATH += -I$(includedir)
+	LIBS += -L$(libdir) -lagilewcs 
+endif 
+
+#Set addition parameters that depends by operating system
 
 ifneq (, $(findstring linux, $(SYSTEM)))
  	#Do linux things
@@ -111,6 +130,7 @@ ifneq (, $(findstring apple, $(SYSTEM)))
                 LIBS += -lZerocIce -lZerocIceUtil -lFreeze
         endif
 endif 
+
 LINK     = $CC
 #for link
 LFLAGS = -shared -Wl,-soname,$(TARGET1) -Wl,-rpath,$(DESTDIR)
