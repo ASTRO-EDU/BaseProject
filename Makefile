@@ -275,6 +275,7 @@ install: all
 	#$(COPY_FILE) $(ICON_DIR)/$(ICON_NAME) $(icondir)
 
 	# For conf files installation
+	#test -d $(datadir) || mkdir -p $(datadir)
 	#$(COPY_FILE) $(CONF_DIR)/* $(datadir)/$(CONF_DEST_DIR)
 
 
