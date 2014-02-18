@@ -5,7 +5,9 @@
 # 		make CFLAGS='-g'
 #		make prefix='/usr'
 #		make CC=gcc-4.8
-# External environment variable: CFISIO, ROOTSYS, CTARTA, ICEDIR
+# External environment variable. 
+#	Build: CPLUS_INCLUDE_PATH LIBRARY_PATH
+#	Execution: LD_LIBRARY_PATH DYLD_LIBRARY_PATH LOCAL  
 # Instructions:
 # - modify the section 1)
 # - in section 10), modify the following action:
@@ -16,26 +18,27 @@
 #		* uninstall: add or remove the files and directories that should be uninstalled
 #############################################################################
 
-PROJECT= <project_name>
+PROJECT= RTACoreIce1
 SHELL = /bin/sh
 
 ####### 1) Project names and system
 
 SYSTEM= $(shell gcc -dumpmachine)
 #ice, ctarta, mpi, cfitsio
-LINKERENV= <ice, ctarta, cfitsio, mpi, pil, wcs, root>
-EXE_NAME = <exe_name> 
-LIB_NAME = <lib_name>
+LINKERENV= ice, ctarta, cfitsio, root
+EXE_NAME1 = RTAReceiver_Ice
+EXE_NAME2 = RTAWave
+LIB_NAME = 
 VER_FILE_NAME = version.h
 #the name of the directory where the conf file are copied (into $(datadir))
-CONF_DEST_DIR =
+CONF_DEST_DIR = RTACoreIce1
 #the name of the icon for the installation
 ICON_NAME=
 
 ####### 2) Directories for the installation
 
 # Prefix for each installed program. Only ABSOLUTE PATH
-prefix=/usr/local
+prefix=$(LOCAL)
 exec_prefix=$(prefix)
 # The directory to install the binary files in.
 bindir=$(exec_prefix)/bin
@@ -59,7 +62,7 @@ DOC_DIR = ref
 DOXY_SOURCE_DIR = code_filtered
 EXE_DESTDIR  = .
 LIB_DESTDIR = lib
-CONF_DIR=conf
+CONF_DIR= conf
 ICON_DIR = ui
 
 ####### 4) Compiler, tools and options
@@ -80,41 +83,26 @@ ALL_CFLAGS = -m64 -fexceptions -Wall $(CFLAGS) $(INCPATH)
 #Use CPPFLAGS for the preprocessor
 CPPFLAGS =
 
-ifneq (, $(findstring ice, $(LINKERENV)))
-        INCPATH += -I$(ICEDIR)/include
-endif
 ifneq (, $(findstring cfitsio, $(LINKERENV)))
-        INCPATH += -I$(CFITSIO)/include
-	LIBS += -L$(CFITSIO)/lib -lcfitsio
+	LIBS += -lcfitsio
 endif
 ifneq (, $(findstring ctarta, $(LINKERENV)))
-        INCPATH += -I$(CTARTA)/include
-	LIBS += -L$(CTARTA)/lib -lpacket -lRTAtelem
+	LIBS += -lpacket -lRTAtelem
 endif
 ifneq (, $(findstring root, $(LINKERENV)))
         ROOTCFLAGS   := $(shell root-config --cflags)
 	ROOTLIBS     := $(shell root-config --libs)
 	ROOTGLIBS    := $(shell root-config --glibs)
 	ROOTCONF=-O -pipe -Wall -W -fPIC -D_REENTRANT
-	INCPATH += -I$(ROOTSYS)/include/root
 	LIBS += $(ROOTGLIBS) -lMinuit
 	ALL_CFLAGS += $(ROOTCONF)
 endif
-ifneq (, $(findstring pil, $(LINKERENV)))
-        INCPATH += -I$(AGILE)/include
-	LIBS += -L$(AGILE)/lib -lagilepil
-endif
-ifneq (, $(findstring wcs, $(LINKERENV)))
-        INCPATH += -I$(AGILE)/include
-	LIBS += -L$(AGILE)/lib -lagilewcs 
-endif 
 
 #Set addition parameters that depends by operating system
 
 ifneq (, $(findstring linux, $(SYSTEM)))
  	#Do linux things
 	ifneq (, $(findstring ice, $(LINKERENV)))
-		LIBS += -L$(ICEDIR)/lib64
 		LIBS += -lIce -lIceUtil -lFreeze
 	endif
 endif
@@ -126,7 +114,6 @@ endif
 ifneq (, $(findstring apple, $(SYSTEM)))
  	# Do apple things
 	ifneq (, $(findstring ice, $(LINKERENV)))
-		LIBS += -L$(ICEDIR)/lib
                 LIBS += -lZerocIce -lZerocIceUtil -lFreeze
         endif
 endif 
@@ -165,7 +152,7 @@ DOC_SOURCE= $(addprefix $(DOXY_SOURCE_DIR)/, $(notdir $(SOURCE)))
 
 ####### 7) Only for library generation
 
-TARGET   = $(LIB_NAME).so.$(shell cat version)
+TARGET  = $(LIB_NAME).so.$(shell cat version)
 TARGETA	= $(LIB_NAME).a
 TARGETD	= $(LIB_NAME).so.$(shell cat version)
 TARGET0	= $(LIB_NAME).so
@@ -203,7 +190,7 @@ lib: staticlib
 	
 exe: makeobjdir $(OBJECTS)
 		test -d $(EXE_DESTDIR) || mkdir -p $(EXE_DESTDIR)
-		$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -o $(EXE_DESTDIR)/$(EXE_NAME) $(OBJECTS_DIR)/*.o $(LIBS)
+		$(CC) $(CPPFLAGS) $(ALL_CFLAGS) -o $(EXE_DESTDIR)/$(EXE_NAME1) $(OBJECTS_DIR)/*.o $(LIBS)
 	
 staticlib: makelibdir makeobjdir $(OBJECTS)	
 		test -d $(LIB_DESTDIR) || mkdir -p $(LIB_DESTDIR)	
@@ -234,7 +221,8 @@ clean:
 	$(DEL_FILE) *~ core *.core
 	$(DEL_FILE) $(LIB_DESTDIR)/*.a
 	$(DEL_FILE) $(LIB_DESTDIR)/*.so*
-	$(DEL_FILE) $(EXE_DESTDIR)/$(EXE_NAME)	
+	$(DEL_FILE) $(EXE_DESTDIR)/$(EXE_NAME1)	
+	$(DEL_FILE) $(EXE_DESTDIR)/$(EXE_NAME2)
 	$(DEL_FILE) version
 	$(DEL_FILE) prefix
 	$(DEL_FILE) $(PROJECT).dvi
@@ -254,29 +242,30 @@ distclean: clean
 #and so on to the file names where they should reside for actual use. 
 install: all
 	$(shell echo $(prefix) > prefix)
-	#test -d $(datadir)/$(CONF_DEST_DIR) || mkdir -p $(datadir)/$(CONF_DEST_DIR)
 	#test -d $(infodir) || mkdir -p $(infodir)	
 
 	# For library installation
-	test -d $(libdir) || mkdir -p $(libdir)
-	test -d $(includedir) || mkdir -p $(includedir)	
-	$(COPY_FILE) $(LIB_DESTDIR)/$(TARGETA) $(libdir)
-	$(COPY_FILE) $(LIB_DESTDIR)/$(TARGET0) $(libdir)
-	$(COPY_FILE) $(LIB_DESTDIR)/$(TARGET1) $(libdir)
-	$(COPY_FILE) $(LIB_DESTDIR)/$(TARGET2) $(libdir)
-	$(COPY_FILE) $(LIB_DESTDIR)/$(TARGETD) $(libdir)
-	$(COPY_FILE) $(INCLUDE) $(includedir)
+	#test -d $(libdir) || mkdir -p $(libdir)
+	#test -d $(includedir) || mkdir -p $(includedir)	
+	#$(COPY_FILE) $(LIB_DESTDIR)/$(TARGETA) $(libdir)
+	#$(COPY_FILE) $(LIB_DESTDIR)/$(TARGET0) $(libdir)
+	#$(COPY_FILE) $(LIB_DESTDIR)/$(TARGET1) $(libdir)
+	#$(COPY_FILE) $(LIB_DESTDIR)/$(TARGET2) $(libdir)
+	#$(COPY_FILE) $(LIB_DESTDIR)/$(TARGETD) $(libdir)
+	#$(COPY_FILE) $(INCLUDE) $(includedir)
 	
 	# For exe installation
-	#test -d $(bindir) || mkdir -p $(bindir)	
-	#$(COPY_FILE) $(EXE_DESTDIR)/$(EXE_NAME) $(bindir)
+	test -d $(bindir) || mkdir -p $(bindir)	
+	$(COPY_FILE) $(EXE_DESTDIR)/$(EXE_NAME1) $(bindir)
+	$(COPY_FILE) $(EXE_DESTDIR)/$(EXE_NAME2) $(bindir)
+	
 	#copy icon
 	#test -d $(icondir) || mkdir -p $(icondir)
 	#$(COPY_FILE) $(ICON_DIR)/$(ICON_NAME) $(icondir)
 
 	# For conf files installation
-	#test -d $(datadir) || mkdir -p $(datadir)
-	#$(COPY_FILE) $(CONF_DIR)/* $(datadir)/$(CONF_DEST_DIR)
+	test -d $(datadir)/$(CONF_DEST_DIR) || mkdir -p $(datadir)/$(CONF_DEST_DIR)
+	$(COPY_FILE) $(CONF_DIR)/* $(datadir)/$(CONF_DEST_DIR)
 
 
 #uninstall: delete all the installed files--the copies that the `install' target creates. 
