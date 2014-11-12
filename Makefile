@@ -5,6 +5,7 @@
 # 		make CFLAGS='-g'
 #		make prefix='/usr'
 #		make CC=gcc-4.8
+#		make COMPILEVARS="-D GEANT4_9_1 -D GEANT4_9_4 -D GEANT4_9_6 -D WITHOUTROOT"
 # External environment variable. 
 #	Build: CPLUS_INCLUDE_PATH LIBRARY_PATH
 #	Execution: LD_LIBRARY_PATH DYLD_LIBRARY_PATH LOCAL  
@@ -18,20 +19,20 @@
 #		* uninstall: add or remove the files and directories that should be uninstalled
 #############################################################################
 
-PROJECT= RTACoreIce1
+PROJECT= bogemms
 SHELL = /bin/sh
 
 ####### 1) Project names and system
 
 SYSTEM= $(shell gcc -dumpmachine)
 #ice, ctarta, mpi, cfitsio
-LINKERENV= ice, ctarta, cfitsio, root
-EXE_NAME1 = RTAReceiver_Ice
-EXE_NAME2 = RTAWave
+LINKERENV= geant4, cfitsio, root
+EXE_NAME1 = bogemms
+EXE_NAME2 =
 LIB_NAME = 
 VER_FILE_NAME = version.h
 #the name of the directory where the conf file are copied (into $(datadir))
-CONF_DEST_DIR = RTACoreIce1
+CONF_DEST_DIR = bogemms
 #the name of the icon for the installation
 ICON_NAME=
 
@@ -57,7 +58,11 @@ icondir=$(HOME)/.local/share/applications/
 
 OBJECTS_DIR = obj
 SOURCE_DIR = code
+SOURCE_DIR_PHYS = phys
+SOURCE_DIR_GEOM = geom
 INCLUDE_DIR = code
+INCLUDE_DIR_PHYS = phys
+INCLUDE_DIR_GEOM = geom
 DOC_DIR = ref
 DOXY_SOURCE_DIR = code_filtered
 EXE_DESTDIR  = .
@@ -74,13 +79,14 @@ CC       = gcc
 endif
 
 #Set INCPATH to add the inclusion paths
-INCPATH = -I $(INCLUDE_DIR) 
+INCPATH = -I $(INCLUDE_DIR) -I $(SOURCE_DIR_PHYS) -I $(SOURCE_DIR_GEOM)
 LIBS = -lstdc++
 #Insert the optional parameter to the compiler. The CFLAGS could be changed externally by the user
-CFLAGS   = -g
-CXXFLAGS =
+CFLAGS   ?= -g
+CXXFLAGS ?=
+COMPILEVARS ?=
 #Insert the implicit parameter to the compiler:
-ALL_CFLAGS = -m64 -fexceptions -Wall  $(INCPATH)
+ALL_CFLAGS = -m64 -fexceptions -Wall  $(INCPATH) $(COMPILEVARS)
 
 ifneq (, $(findstring cfitsio, $(LINKERENV)))
 	LIBS += -lcfitsio
@@ -89,13 +95,21 @@ ifneq (, $(findstring ctarta, $(LINKERENV)))
 	LIBS += -lpacket
 endif
 ifneq (, $(findstring root, $(LINKERENV)))
-        ROOTCFLAGS   := $(shell root-config --cflags)
+	ROOTCFLAGS   := $(shell root-config --cflags)
 	ROOTLIBS     := $(shell root-config --libs)
 	ROOTGLIBS    := $(shell root-config --glibs)
-	ROOTCONF=-O -pipe -Wall -W -fPIC -D_REENTRANT
-	LIBS += $(ROOTGLIBS) -lMinuit
+	ROOTCONF=-O -pipe -Wall -W -fPIC -D_REENTRANT $(ROOTCFLAGS)
+	LIBS += $(ROOTGLIBS) -lMinuit -lNetx
 	ALL_CFLAGS += $(ROOTCONF)
 endif
+ifneq (, $(findstring geant4, $(LINKERENV)))
+	GEANT4CFLAGS   := $(shell geant4-config --cflags)
+	GEANT4LIBS     := $(shell geant4-config --libs)
+	#ROOTCONF=-O -pipe -Wall -W -fPIC -D_REENTRANT
+	LIBS += $(GEANT4LIBS) 
+	ALL_CFLAGS += $(GEANT4CFLAGS)
+endif
+
 
 #Set addition parameters that depends by operating system
 
@@ -114,7 +128,7 @@ ifneq (, $(findstring apple, $(SYSTEM)))
  	# Do apple things
 	ifneq (, $(findstring ice, $(LINKERENV)))
                 LIBS += -lZerocIce -lZerocIceUtil -lFreeze
-        endif
+	endif
 endif 
 
 LINK     = $CC
@@ -141,7 +155,9 @@ vpath %.o $(OBJECTS_DIR)
 ####### 6) Files of the project
 	
 INCLUDE=$(foreach dir,$(INCLUDE_DIR), $(wildcard $(dir)/*.h))
+INCLUDE+=$(foreach dir,$(INCLUDE_DIR), $(wildcard $(dir)/*.hh))
 SOURCE=$(foreach dir,$(SOURCE_DIR), $(wildcard $(dir)/*.cpp))
+SOURCE+=$(foreach dir,$(SOURCE_DIR), $(wildcard $(dir)/*.cc))
 SOURCE+=$(foreach dir,$(SOURCE_DIR), $(wildcard $(dir)/*.c))
 #Objects to build
 OBJECTS=$(addsuffix .o, $(basename $(notdir $(SOURCE))))
@@ -168,6 +184,9 @@ $(shell  cut $(INCLUDE_DIR)/$(VER_FILE_NAME) -f 3 > version)
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) $(ALL_CFLAGS) -c $< -o $(OBJECTS_DIR)/$@
 
+%.o : %.cc
+	$(CXX) $(CXXFLAGS) $(ALL_CFLAGS) -c $< -o $(OBJECTS_DIR)/$@
+
 %.o : %.c
 	$(CC) $(CFLAGS) $(ALL_CFLAGS) -c $< -o $(OBJECTS_DIR)/$@
 
@@ -175,7 +194,13 @@ $(shell  cut $(INCLUDE_DIR)/$(VER_FILE_NAME) -f 3 > version)
 $(DOXY_SOURCE_DIR)/%.h : %.h
 	cp  $<  $@
 
+$(DOXY_SOURCE_DIR)/%.hh : %.hh
+	cp  $<  $@
+
 $(DOXY_SOURCE_DIR)/%.cpp : %.cpp
+	cp  $<  $@
+
+$(DOXY_SOURCE_DIR)/%.cc : %.cc
 	cp  $<  $@
 	
 ####### 10) Build rules
